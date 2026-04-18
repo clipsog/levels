@@ -51,6 +51,9 @@ app.use(express.json({ limit: '3mb' }))
 app.get('/health', (_req, res) => {
   res.json({ ok: true })
 })
+app.head('/health', (_req, res) => {
+  res.sendStatus(200)
+})
 
 /** Readiness: verifies Postgres / Supabase. Use for monitoring, not Render’s default check. */
 app.get('/health/db', async (_req, res) => {

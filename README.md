@@ -4,7 +4,7 @@
 
 1. New **Web Service** → connect this repo.
 2. **Build command:** `npm ci && npm run build` (or `npm install && npm run build`).
-3. **Start command:** `node server/index.mjs` (or `npm start` if your `package.json` has a `start` script — latest repo includes it.)
+3. **Start command (important):** use **`exec node server/index.mjs`** or at least **`node server/index.mjs`**. Do **not** use plain **`npm start`** on Render: `npm` stays the parent process while Node listens in a child, which often triggers Render’s **“New primary port detected”** loop and a deploy that never finishes. Locally, `npm start` is still fine.
 4. **Environment:** add **`DATABASE_URL`** (your Supabase connection string). Render sets **`PORT`** automatically; the server uses it.
 5. Optional: use **`render.yaml`** in the repo root for a [Blueprint](https://render.com/docs/blueprint-spec).
 

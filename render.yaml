@@ -1,4 +1,7 @@
 # https://render.com/docs/blueprint-spec
+#
+# Use `exec node …` so Node replaces the shell as PID 1. If you use `npm start`, npm
+# stays the parent and Render’s port scanner can loop on “New primary port detected”.
 services:
   - type: web
     name: levels
@@ -6,7 +9,7 @@ services:
     region: oregon
     plan: free
     buildCommand: npm ci && npm run build
-    startCommand: node server/index.mjs
+    startCommand: exec node server/index.mjs
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
