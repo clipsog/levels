@@ -35,19 +35,33 @@
         const origin = location.origin
         if (origin === 'null' || origin === 'file:') {
           out.innerHTML =
-            '<p><strong>Open this page from your Levels dev server</strong>, not as a file.</p>' +
-            '<p>Example: <code>http://127.0.0.1:5176/export-state.html</code></p>'
+            '<p><strong>Open this page from the Vite dev server</strong> (not as a file).</p>' +
+            '<p>Use the <em>same host</em> as your Levels tab, e.g. <code>http://localhost:5176/export-state.html</code> or <code>http://127.0.0.1:5176/export-state.html</code>.</p>'
           return
         }
         const raw = localStorage.getItem(KEY)
         if (!raw) {
+          const port = location.port || (location.protocol === 'https:' ? '443' : '80')
+          const loc = 'http://localhost:' + port + location.pathname
+          const loop = 'http://127.0.0.1:' + port + location.pathname
           out.innerHTML =
-            '<p>No <code>' +
+            '<p><strong>No <code>' +
             KEY +
-            '</code> on <strong>' +
+            '</code> on this origin:</strong> <code>' +
             origin +
-            '</strong>.</p>' +
-            '<p>Use the same host you use for the app (try <code>127.0.0.1</code> vs <code>localhost</code>).</p>'
+            '</code></p>' +
+            '<p>Chrome stores localStorage <em>per origin</em>. <code>http://localhost:5176</code> and <code>http://127.0.0.1:5176</code> are <strong>two different origins</strong> — data saved while using Levels on one does not exist on the other.</p>' +
+            '<p><strong>Fix:</strong> open this exact page on the host you actually use for Levels:</p>' +
+            '<ul><li><a href="' +
+            loc +
+            '">' +
+            loc +
+            '</a></li><li><a href="' +
+            loop +
+            '">' +
+            loop +
+            '</a></li></ul>' +
+            '<p>Whichever URL shows your data in Levels is the one where export will work.</p>'
           return
         }
         try {

@@ -119,7 +119,7 @@ This runs every `db/init/*.sql` file in sorted order via `scripts/migrate.mjs`.
 
 The UI stores a copy in the browser as **`localStorage`** key **`levels-finance-v2`**. The hosted app reads/writes the same shape in Postgres table **`app_state`** (`profile_key` = `default`). Nothing syncs **from** your laptop **to** Supabase until you upload it once.
 
-**Easiest (dev):** with **`npm run dev:full`** running, open **[http://127.0.0.1:5176/export-state.html](http://127.0.0.1:5176/export-state.html)** (or use the **“Download backup JSON”** link under the Levels title in dev). Click **Download** — you get valid JSON, no DevTools copy/paste.
+**Easiest (dev):** with **`npm run dev:full`** running, open **`/export-state.html` on the same host as Levels** (e.g. if the app is `http://localhost:5176`, use `http://localhost:5176/export-state.html` — **`localhost` and `127.0.0.1` do not share localStorage**). Or use the **“Download backup JSON”** link on the app (it uses your current host). Click **Download** — you get valid JSON.
 
 1. Put **`DATABASE_URL`** in a **`.env`** file in the repo root (see **`.env.example`**; `.env` is gitignored), **or** export it in the shell.
 2. From the repo root:
