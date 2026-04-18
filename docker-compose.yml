@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: levels-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: levels
+      POSTGRES_USER: levels
+      POSTGRES_PASSWORD: levels_dev_password
+    ports:
+      - '54329:5432'
+    volumes:
+      - levels_postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U levels -d levels']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  levels_postgres_data:

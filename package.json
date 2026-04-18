@@ -1,0 +1,27 @@
+{
+  "name": "levels",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "api": "node --watch server/index.mjs",
+    "dev:full": "concurrently -n api,levels \"npm run api\" \"vite --port 5176\"",
+    "dev:all": "concurrently -n api,levels,assets \"npm run api\" \"vite --port 5176\" \"npm run dev --prefix ../.gemini/antigravity/scratch/value-scheduler -- --port 5190\"",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:psql": "docker compose exec postgres psql -U levels -d levels",
+    "db:reset": "docker compose down -v && docker compose up -d postgres"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1"
+  }
+}
