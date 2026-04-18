@@ -1,20 +1,50 @@
 import express from 'express'
+import path from 'path'
+import { existsSync } from 'fs'
+import { fileURLToPath } from 'url'
 import pg from 'pg'
 
 const { Pool } = pg
 
-const PORT = Number(process.env.LEVELS_API_PORT ?? 8787)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+/** Render cwd is repo root; `__dirname` is reliable locally — try both. */
+function resolveDistDir() {
+  const candidates = [path.join(process.cwd(), 'dist'), path.join(__dirname, '..', 'dist')]
+  for (const dir of candidates) {
+    if (existsSync(path.join(dir, 'index.html'))) return dir
+  }
+  return null
+}
+
+const distDir = resolveDistDir()
+
+/** Render and other hosts set PORT; local dev can use LEVELS_API_PORT. */
+const PORT = Number(process.env.PORT ?? process.env.LEVELS_API_PORT ?? 8787)
 const PROFILE_KEY = process.env.LEVELS_PROFILE_KEY ?? 'default'
 
-const pool = new Pool({
-  host: process.env.PGHOST ?? 'localhost',
-  port: Number(process.env.PGPORT ?? 5432),
-  user: process.env.PGUSER ?? 'levels',
-  password: process.env.PGPASSWORD ?? 'levels_dev_password',
-  database: process.env.PGDATABASE ?? 'levels',
-})
+const databaseUrl = process.env.DATABASE_URL?.trim()
+
+const pool = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ...(String(databaseUrl).includes('supabase.com')
+        ? { ssl: { rejectUnauthorized: false } }
+        : {}),
+    })
+  : new Pool({
+      host: process.env.PGHOST ?? 'localhost',
+      port: Number(process.env.PGPORT ?? 5432),
+      user: process.env.PGUSER ?? 'levels',
+      password: process.env.PGPASSWORD ?? 'levels_dev_password',
+      database: process.env.PGDATABASE ?? 'levels',
+      ...(process.env.PGSSL === '1'
+        ? { ssl: { rejectUnauthorized: false } }
+        : {}),
+    })
 
 const app = express()
+app.set('trust proxy', 1)
 app.use(express.json({ limit: '3mb' }))
 
 app.get('/health', async (_req, res) => {
@@ -58,6 +88,31 @@ app.put('/api/state', async (req, res) => {
   }
 })
 
-app.listen(PORT, () => {
-  console.log(`Levels API listening on http://localhost:${PORT}`)
+if (distDir) {
+  const indexHtml = path.join(distDir, 'index.html')
+  /** Explicit `/` so Express 5 + static never leave root as “Cannot GET /”. */
+  app.get('/', (_req, res) => {
+    res.sendFile(indexHtml)
+  })
+  app.use(express.static(distDir, { index: false }))
+  /** SPA fallback (Express 5: avoid `*` route pattern). */
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next()
+    if (req.path.startsWith('/api') || req.path === '/health') return next()
+    res.sendFile(indexHtml, (err) => (err ? next(err) : undefined))
+  })
+} else {
+  app.get('/', (_req, res) => {
+    res
+      .status(503)
+      .type('text')
+      .send(
+        `Levels UI missing: no dist/index.html. Run "npm run build" before start. cwd=${process.cwd()} __dirname=${__dirname}`,
+      )
+  })
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  const mode = distDir ? `API + static (${distDir})` : 'API only (no dist)'
+  console.log(`Levels listening on port ${PORT} — ${mode}`)
 })

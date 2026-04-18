@@ -1,0 +1,15 @@
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: levels
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node server/index.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false

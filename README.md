@@ -1,5 +1,17 @@
 # Levels
 
+## Deploy on [Render](https://render.com)
+
+1. New **Web Service** → connect this repo.
+2. **Build command:** `npm ci && npm run build` (or `npm install && npm run build`).
+3. **Start command:** `node server/index.mjs` (or `npm start` if your `package.json` has a `start` script — latest repo includes it.)
+4. **Environment:** add **`DATABASE_URL`** (your Supabase connection string). Render sets **`PORT`** automatically; the server uses it.
+5. Optional: use **`render.yaml`** in the repo root for a [Blueprint](https://render.com/docs/blueprint-spec).
+
+Production serves the Vite build from the same process as the API, so the UI keeps calling **`/api/state`** on the same host (no extra `VITE_*` URL).
+
+---
+
 ## Local PostgreSQL (dev)
 
 The app persists to PostgreSQL through a local API (`server/index.mjs`), with `localStorage` as backup fallback.
@@ -89,13 +101,22 @@ The initialization SQL is in:
 
 - `db/init/001_schema.sql`
 
-It creates a base `app_state` JSONB table to store app snapshots and is Postgres-compatible for future Supabase migration.
+It creates a base `app_state` JSONB table to store app snapshots and is Postgres-compatible for Supabase.
+
+### Apply schema to Supabase (or any Postgres)
+
+Set `DATABASE_URL` to your connection string, then:
+
+```bash
+npm run db:migrate
+```
+
+This runs every `db/init/*.sql` file in sorted order via `scripts/migrate.mjs`.
 
 ## Move to Supabase later
 
 When ready for production:
 
-1. Create a Supabase project.
-2. Run the same SQL from `db/init/001_schema.sql` in Supabase SQL editor.
-3. Replace local DB connection values with Supabase connection/env vars.
-4. Add auth + row-level security policies before exposing writes publicly.
+1. Create a Supabase project and run `npm run db:migrate` with `DATABASE_URL` set (or paste `db/init/001_schema.sql` in the Supabase SQL editor).
+2. Point the API at Supabase using `DATABASE_URL`.
+3. Add auth + row-level security policies before exposing writes publicly.

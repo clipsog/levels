@@ -9,12 +9,14 @@
     "dev:full": "concurrently -n api,levels \"npm run api\" \"vite --port 5176\"",
     "dev:all": "concurrently -n api,levels,assets \"npm run api\" \"vite --port 5176\" \"npm run dev --prefix ../.gemini/antigravity/scratch/value-scheduler -- --port 5190\"",
     "build": "tsc && vite build",
+    "start": "node server/index.mjs",
     "preview": "vite preview",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
     "db:psql": "docker compose exec postgres psql -U levels -d levels",
-    "db:reset": "docker compose down -v && docker compose up -d postgres"
+    "db:reset": "docker compose down -v && docker compose up -d postgres",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "express": "^5.1.0",
