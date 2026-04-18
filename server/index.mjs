@@ -47,12 +47,18 @@ const app = express()
 app.set('trust proxy', 1)
 app.use(express.json({ limit: '3mb' }))
 
-app.get('/health', async (_req, res) => {
+/** Liveness for Render (must stay 200 or deploy never goes “Live”). */
+app.get('/health', (_req, res) => {
+  res.json({ ok: true })
+})
+
+/** Readiness: verifies Postgres / Supabase. Use for monitoring, not Render’s default check. */
+app.get('/health/db', async (_req, res) => {
   try {
     await pool.query('select 1')
-    res.json({ ok: true })
+    res.json({ ok: true, database: true })
   } catch (err) {
-    res.status(500).json({ ok: false, error: String(err) })
+    res.status(503).json({ ok: false, database: false, error: String(err) })
   }
 })
 
@@ -98,7 +104,7 @@ if (distDir) {
   /** SPA fallback (Express 5: avoid `*` route pattern). */
   app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next()
-    if (req.path.startsWith('/api') || req.path === '/health') return next()
+    if (req.path.startsWith('/api') || req.path.startsWith('/health')) return next()
     res.sendFile(indexHtml, (err) => (err ? next(err) : undefined))
   })
 } else {

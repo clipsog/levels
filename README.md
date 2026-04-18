@@ -10,6 +10,8 @@
 
 Production serves the Vite build from the same process as the API, so the UI keeps calling **`/api/state`** on the same host (no extra `VITE_*` URL).
 
+**Render health check:** use **`/health`** (always 200 if the process is up). **`/health/db`** checks Postgres/Supabase (503 if the DB is down — use that for monitoring, not as Render’s only health URL, or deploys can loop when `DATABASE_URL` is wrong).
+
 ---
 
 ## Local PostgreSQL (dev)
