@@ -119,10 +119,18 @@ This runs every `db/init/*.sql` file in sorted order via `scripts/migrate.mjs`.
 
 The UI stores a copy in the browser as **`localStorage`** key **`levels-finance-v2`**. The hosted app reads/writes the same shape in Postgres table **`app_state`** (`profile_key` = `default`). Nothing syncs **from** your laptop **to** Supabase until you upload it once.
 
-1. On the machine where you still have the data, open the Levels site (local dev is fine).
-2. DevTools → **Application** → **Local Storage** → select the origin → copy the **value** of **`levels-finance-v2`** (it is one JSON object).
-3. Paste into a file, e.g. **`my-state.json`**, and save (valid JSON only).
-4. From the repo root, with **`DATABASE_URL`** pointing at **Supabase**:
+**Easiest (dev):** with **`npm run dev:full`** running, open **[http://127.0.0.1:5176/export-state.html](http://127.0.0.1:5176/export-state.html)** (or use the **“Download backup JSON”** link under the Levels title in dev). Click **Download** — you get valid JSON, no DevTools copy/paste.
+
+1. Put **`DATABASE_URL`** in a **`.env`** file in the repo root (see **`.env.example`**; `.env` is gitignored), **or** export it in the shell.
+2. From the repo root:
+
+```bash
+npm run db:push-state
+```
+
+With no filename, the script looks for **`./local-state.json`**, **`./levels-state-export.json`**, or **`~/Downloads/levels-state-export.json`**.
+
+Or pass an explicit path:
 
 ```bash
 npm run db:push-state -- ./my-state.json
@@ -130,7 +138,7 @@ npm run db:push-state -- ./my-state.json
 
 Optional: **`LEVELS_PROFILE_KEY=myprofile`** if you use a non-default profile on the server.
 
-5. Reload the **production** site; it will **`GET /api/state`** and merge that snapshot into the page.
+3. Reload the **production** site; it will **`GET /api/state`** and load that snapshot.
 
 **Via HTTP instead of DB** (no `DATABASE_URL` on your laptop): create **`payload.json`** containing `{"state": ... }` (same object as in localStorage), then:
 

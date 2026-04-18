@@ -3205,6 +3205,11 @@ function render(): void {
     <header class="levels-header">
       <h1>Levels</h1>
       <p>Bank accounts hold bills and <strong>next-level</strong> asset plans; income and expenses show whether your cash flow can reach those targets.</p>
+      ${
+        import.meta.env.DEV
+          ? '<p class="dev-export-hint"><a href="/export-state.html">Download backup JSON (for Supabase)</a></p>'
+          : ''
+      }
     </header>
 
     <section class="panel" aria-labelledby="accounts-heading">

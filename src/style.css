@@ -162,6 +162,14 @@ body::before {
   line-height: 1.6;
 }
 
+.dev-export-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.88rem;
+}
+.dev-export-hint a {
+  color: var(--accent, #2563eb);
+}
+
 /* Panels — glass cards like dashboard-section / onboarding-card, light theme */
 .panel {
   background: var(--card);

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Levels — Export saved data</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      code {
+        background: #f0f0f0;
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      button {
+        font-size: 1rem;
+        padding: 0.6rem 1rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Export Levels data</h1>
+    <div id="out"></div>
+    <script>
+      ;(function () {
+        const KEY = 'levels-finance-v2'
+        const out = document.getElementById('out')
+        const origin = location.origin
+        if (origin === 'null' || origin === 'file:') {
+          out.innerHTML =
+            '<p><strong>Open this page from your Levels dev server</strong>, not as a file.</p>' +
+            '<p>Example: <code>http://127.0.0.1:5176/export-state.html</code></p>'
+          return
+        }
+        const raw = localStorage.getItem(KEY)
+        if (!raw) {
+          out.innerHTML =
+            '<p>No <code>' +
+            KEY +
+            '</code> on <strong>' +
+            origin +
+            '</strong>.</p>' +
+            '<p>Use the same host you use for the app (try <code>127.0.0.1</code> vs <code>localhost</code>).</p>'
+          return
+        }
+        try {
+          JSON.parse(raw)
+        } catch (e) {
+          out.textContent = 'Stored value is not valid JSON: ' + e
+          return
+        }
+        const kb = (raw.length / 1024).toFixed(1)
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.textContent = 'Download levels-state-export.json'
+        btn.addEventListener('click', function () {
+          const blob = new Blob([raw], { type: 'application/json' })
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(blob)
+          a.download = 'levels-state-export.json'
+          a.click()
+          URL.revokeObjectURL(a.href)
+        })
+        out.innerHTML =
+          '<p>Found <code>' +
+          KEY +
+          '</code> on this site (<strong>' +
+          kb +
+          ' KB</strong>).</p>' +
+          '<p>Click the button, then move the file into your repo and run <code>npm run db:push-state</code> (see README).</p>'
+        out.appendChild(btn)
+      })()
+    </script>
+  </body>
+</html>
