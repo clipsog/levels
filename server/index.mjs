@@ -8,11 +8,17 @@ const { Pool } = pg
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-/** Render cwd is repo root; `__dirname` is reliable locally — try both. */
+/** Render cwd is repo root (`/opt/render/project/src`); also try relative to this file. */
 function resolveDistDir() {
-  const candidates = [path.join(process.cwd(), 'dist'), path.join(__dirname, '..', 'dist')]
+  const candidates = [
+    path.join(process.cwd(), 'dist'),
+    path.join(process.cwd(), 'build'),
+    path.join(__dirname, '..', 'dist'),
+    path.join(__dirname, '..', 'build'),
+    path.join(__dirname, '..', '..', 'dist'),
+  ]
   for (const dir of candidates) {
-    if (existsSync(path.join(dir, 'index.html'))) return dir
+    if (existsSync(path.join(dir, 'index.html'))) return path.resolve(dir)
   }
   return null
 }
@@ -98,17 +104,19 @@ app.put('/api/state', async (req, res) => {
 })
 
 if (distDir) {
-  const indexHtml = path.join(distDir, 'index.html')
-  /** Explicit `/` so Express 5 + static never leave root as “Cannot GET /”. */
-  app.get('/', (_req, res) => {
-    res.sendFile(indexHtml)
-  })
-  app.use(express.static(distDir, { index: false }))
-  /** SPA fallback (Express 5: avoid `*` route pattern). */
+  /** Let serve-static handle `/` via index.html (Express 5 `app.get('/')` is unreliable here). */
+  app.use(
+    express.static(distDir, {
+      index: 'index.html',
+      fallthrough: true,
+      dotfiles: 'ignore',
+    }),
+  )
+  /** SPA: non-file GETs → index.html */
   app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next()
     if (req.path.startsWith('/api') || req.path.startsWith('/health')) return next()
-    res.sendFile(indexHtml, (err) => (err ? next(err) : undefined))
+    res.sendFile('index.html', { root: distDir }, (err) => (err ? next(err) : undefined))
   })
 } else {
   app.get('/', (_req, res) => {
@@ -124,4 +132,5 @@ if (distDir) {
 app.listen(PORT, '0.0.0.0', () => {
   const mode = distDir ? `API + static (${distDir})` : 'API only (no dist)'
   console.log(`Levels listening on port ${PORT} — ${mode}`)
+  console.log(`[levels] cwd=${process.cwd()} __dirname=${__dirname}`)
 })
