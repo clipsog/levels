@@ -637,6 +637,8 @@ async function hydrateStateFromRemote(): Promise<void> {
     if (!res.ok) return
     const payload = (await res.json()) as { state?: unknown }
     if (!payload || payload.state == null || typeof payload.state !== 'object') return
+    /** New DB rows often use `{}`; do not replace a populated local snapshot with that. */
+    if (Array.isArray(payload.state) || Object.keys(payload.state as object).length === 0) return
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.state))
     state = loadState()
     render()
