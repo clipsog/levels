@@ -90,6 +90,8 @@ type BillLine = {
   amount: string
   currency: string
   paid: boolean
+  /** When true, this bill line is mirrored into Assets → Subscriptions (shared DB). */
+  showInAssets: boolean
   /** Optional link to a "What the money does" card (set from Management or that tab). */
   moneyDoesCardId: string | null
 }
@@ -153,7 +155,15 @@ function uid(): string {
 }
 
 function emptyBill(inputCurrency: string): BillLine {
-  return { id: uid(), label: '', amount: '', currency: inputCurrency, paid: false, moneyDoesCardId: null }
+  return {
+    id: uid(),
+    label: '',
+    amount: '',
+    currency: inputCurrency,
+    paid: false,
+    showInAssets: false,
+    moneyDoesCardId: null,
+  }
 }
 
 function seedMoneyDoesCards(): MoneyDoesCard[] {
@@ -253,7 +263,7 @@ function loadState(): State {
           const rawAcc = r as BankAccountRow & { bills?: unknown }
           const billRows = Array.isArray(rawAcc.bills)
             ? rawAcc.bills.map((b) => {
-                const x = b as BillLine & { moneyDoesCardId?: unknown }
+                const x = b as BillLine & { moneyDoesCardId?: unknown; showInAssets?: unknown }
                 const mid =
                   typeof x.moneyDoesCardId === 'string' && x.moneyDoesCardId ? x.moneyDoesCardId : null
                 return {
@@ -262,6 +272,7 @@ function loadState(): State {
                   amount: String(x.amount ?? ''),
                   currency: typeof x.currency === 'string' ? x.currency : sys,
                   paid: typeof x.paid === 'boolean' ? x.paid : false,
+                  showInAssets: typeof x.showInAssets === 'boolean' ? x.showInAssets : false,
                   moneyDoesCardId: mid,
                 }
               })
@@ -1872,6 +1883,20 @@ function bindEventsOnce(): void {
       return
     }
 
+    if (el instanceof HTMLInputElement && el.type === 'checkbox' && el.dataset.billShowInAssets != null) {
+      const accId = el.dataset.accountId
+      const billId = el.dataset.billId
+      if (!accId || !billId) return
+      const acc = state.accounts.find((a) => a.id === accId)
+      if (!acc) return
+      const bill = acc.bills.find((b) => b.id === billId)
+      if (!bill) return
+      bill.showInAssets = el.checked
+      saveState(state)
+      render()
+      return
+    }
+
     if (el.id === 'system-currency') {
       const next = el.value
       if (next === sys) return
@@ -2931,6 +2956,16 @@ function billRowHtml(row: BankAccountRow, bill: BillLine, sys: string, rates: Us
           <label class="bill-label">What the money does</label>
           ${moneyDoesTagSelectHtml(bill.moneyDoesCardId, 'bill', { accountId: row.id, billId: bill.id })}
         </div>
+        <label class="bill-assets-sync-wrap">
+          <input
+            type="checkbox"
+            data-bill-show-in-assets
+            data-account-id="${escapeAttr(row.id)}"
+            data-bill-id="${escapeAttr(bill.id)}"
+            ${bill.showInAssets ? 'checked' : ''}
+          />
+          <span>Show in Assets (subscription list)</span>
+        </label>
         <button type="button" class="btn-text btn-text--done" data-ui-done>Done</button>
       </div>`
   }
@@ -2940,7 +2975,7 @@ function billRowHtml(row: BankAccountRow, bill: BillLine, sys: string, rates: Us
           <input type="checkbox" data-bill-paid data-account-id="${escapeAttr(row.id)}" data-bill-id="${escapeAttr(bill.id)}" ${bill.paid ? 'checked' : ''} title="Paid this period" />
           <span class="bill-paid-label">Paid</span>
         </label>
-        <span class="bill-view-label">${escapeHtml(bill.label || 'Untitled')}</span>
+        <span class="bill-view-label">${escapeHtml(bill.label || 'Untitled')}${bill.showInAssets ? ' <span class="bill-assets-badge">Assets</span>' : ''}</span>
         <span class="bill-view-amt">${escapeHtml(amtStr)}</span>
         <div class="bill-row__tag">${moneyDoesTagSelectHtml(bill.moneyDoesCardId, 'bill', { accountId: row.id, billId: bill.id })}</div>
         <div class="entity-row__actions">
@@ -3446,7 +3481,7 @@ function render(): void {
       ${accountAssetGoalsSectionHtml(row, sys, rates)}
       <div class="account-bills">
         <div class="account-bills-title">What is included</div>
-        <p class="account-bills-hint">Check <strong>Paid</strong> when a bill is settled. Totals use your system currency (${escapeHtml(sys)}).</p>
+        <p class="account-bills-hint">Check <strong>Paid</strong> when a bill is settled. In edit mode, tick <strong>Show in Assets</strong> for lines that should appear under Assets → Subscriptions (requires <code>SHARED_FINANCE_DATABASE_URL</code> on the Levels server). Totals use your system currency (${escapeHtml(sys)}).</p>
         <div class="bill-rows">${billsHtml}</div>
         ${accountTrackerBlock(row)}
         <button type="button" class="add-btn add-btn--nested" data-add-bill="${escapeAttr(row.id)}">Add bill or subscription</button>

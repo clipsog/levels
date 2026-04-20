@@ -1318,6 +1318,41 @@ input:focus {
   color: var(--text-muted);
 }
 
+.bill-assets-sync-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0.25rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.bill-assets-sync-wrap input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.bill-assets-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-strong);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  vertical-align: middle;
+}
+
 .bill-row--paid .bill-label,
 .bill-row--paid input[type='text'] {
   opacity: 0.72;

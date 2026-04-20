@@ -3,6 +3,7 @@ import path from 'path'
 import { existsSync } from 'fs'
 import { fileURLToPath } from 'url'
 import pg from 'pg'
+import { syncLevelsTaggedBillsToShared } from './shared-subscription-sync.mjs'
 
 const { Pool } = pg
 
@@ -48,6 +49,16 @@ const pool = databaseUrl
         ? { ssl: { rejectUnauthorized: false } }
         : {}),
     })
+
+const sharedFinanceUrl = process.env.SHARED_FINANCE_DATABASE_URL?.trim()
+const sharedPool = sharedFinanceUrl
+  ? new Pool({
+      connectionString: sharedFinanceUrl,
+      ...(String(sharedFinanceUrl).includes('supabase.com')
+        ? { ssl: { rejectUnauthorized: false } }
+        : {}),
+    })
+  : null
 
 const app = express()
 app.set('trust proxy', 1)
@@ -97,6 +108,13 @@ app.put('/api/state', async (req, res) => {
        do update set state = excluded.state, updated_at = now()`,
       [PROFILE_KEY, JSON.stringify(incoming)],
     )
+    if (sharedPool) {
+      try {
+        await syncLevelsTaggedBillsToShared(sharedPool, PROFILE_KEY, incoming)
+      } catch (syncErr) {
+        console.error('[levels] SHARED_FINANCE_DATABASE_URL sync failed:', syncErr)
+      }
+    }
     res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: String(err) })
@@ -133,4 +151,5 @@ app.listen(PORT, '0.0.0.0', () => {
   const mode = distDir ? `API + static (${distDir})` : 'API only (no dist)'
   console.log(`Levels listening on port ${PORT} — ${mode}`)
   console.log(`[levels] cwd=${process.cwd()} __dirname=${__dirname}`)
+  if (sharedPool) console.log('[levels] SHARED_FINANCE_DATABASE_URL enabled → bill lines tagged for Assets sync to shared_subscriptions')
 })

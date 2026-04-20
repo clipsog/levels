@@ -13,6 +13,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import pg from 'pg'
+import { syncLevelsTaggedBillsToShared } from '../server/shared-subscription-sync.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
@@ -117,6 +118,22 @@ await client.query(
    do update set state = excluded.state, updated_at = now()`,
   [profileKey, JSON.stringify(state)],
 )
+
+const sharedUrl = process.env.SHARED_FINANCE_DATABASE_URL?.trim()
+if (sharedUrl) {
+  const sharedSsl = String(sharedUrl).includes('supabase.com')
+    ? { rejectUnauthorized: false }
+    : undefined
+  const sharedPool = new pg.Pool({ connectionString: sharedUrl, ssl: sharedSsl })
+  try {
+    await syncLevelsTaggedBillsToShared(sharedPool, profileKey, state)
+    console.log('Synced Levels bills tagged for Assets → shared_subscriptions (SHARED_FINANCE_DATABASE_URL).')
+  } catch (e) {
+    console.error('Shared subscription sync failed:', e?.message ?? e)
+  } finally {
+    await sharedPool.end()
+  }
+}
 
 await client.end()
 console.log(`Upserted app_state for profile_key=${profileKey} (${Object.keys(state).length} top-level keys).`)
